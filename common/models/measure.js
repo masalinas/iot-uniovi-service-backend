@@ -3,9 +3,9 @@
 var moment = require('moment');
 
 const DEF_KEY = 'FRECUENCY'; // Frecuency Key code
-var frec = 1;  // current frecuency in minutes
+var frec;  // current frecuency in minutes
 
-var measureHistorized = {date: undefined, value: undefined, value: undefined}; //last meaure historized
+var historized; //last meaure historized
 var measures = []; // historize array measures
 
 module.exports = function(Measure) {
@@ -30,35 +30,37 @@ module.exports = function(Measure) {
     }
 
     function findLastMeasure(measure, cb) {
-        if (measureHistorized.value == undefined) {
+        if (historized == null || historized == undefined) {
             Measure.findOne({where: {device: measure.device}, order: 'date DESC'}, function (err, result) {
                 if (err) return cb(err);
 
                 // if not exist any data in the database
                 if (result == null)
-                    saveMeasure(result, measure, cb);
+                    saveMeasure(measure, cb);
                 else {    
-                    measureHistorized = result.__data;
+                    historized = result.__data;
 
-                    saveMeasure(measureHistorized, measure, cb);
+                    saveMeasure(measure, cb);
                 }
             });
         } else
-            saveMeasure(measureHistorized, measure, cb);
+            saveMeasure(measure, cb);
     }
 
-    function saveMeasure(measureHistorized, measure, cb) {
+    function saveMeasure(measure, cb) {
         // check if exist any data in the database
-        if (measureHistorized == null) {
+        if (historized == null || historized == undefined) {
             // persist the measure
             Measure.upsert(measure, function (err, result) {
                 if (err) return cb(err);
 
-                cb(null, result.__data);
+                historized = result.__data;
+
+                cb(null, historized);
             });
         }
         else {            
-            var diff = moment(new Date()).diff(moment(measureHistorized.date), 'seconds');
+            var diff = moment(new Date()).diff(moment(historized.date), 'seconds');
 
             if (diff < frec * 60) {
                 // insert data in the historize array
@@ -89,14 +91,13 @@ module.exports = function(Measure) {
                     if (err) return cb(err);
             
                     // update last historized measure
-                    measureHistorized = result.__data;
+                    historized = result.__data;
 
-                    cb(null, result.__data);
+                    cb(null, historized);
                 });
             }
         }
     }
-
 
     Measure.historize= function(measure, cb) {        
         if (frec == undefined) {

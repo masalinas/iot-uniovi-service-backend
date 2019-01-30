@@ -16,5 +16,9 @@
   "Measure": {
     "dataSource": "uniovidb",
     "public": true
+  },
+  "Configuration": {
+    "dataSource": "uniovidb",
+    "public": true
   }
 }

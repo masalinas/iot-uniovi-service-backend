@@ -3,9 +3,9 @@
 var moment = require('moment');
 
 const DEF_KEY = 'FRECUENCY'; // Frecuency Key code
-var frec;  // current frecuency in minutes
+var frec = 1;  // current frecuency in minutes
 
-var measureHistorized; //last meaure historized
+var measureHistorized = {date: undefined, value: undefined, value: undefined}; //last meaure historized
 var measures = []; // historize array measures
 
 module.exports = function(Measure) {
@@ -30,7 +30,7 @@ module.exports = function(Measure) {
     }
 
     function findLastMeasure(measure, cb) {
-        if (measureHistorized == undefined) {
+        if (measureHistorized.value == undefined) {
             Measure.findOne({where: {device: measure.device}, order: 'date DESC'}, function (err, result) {
                 if (err) return cb(err);
 

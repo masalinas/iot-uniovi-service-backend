@@ -67,7 +67,7 @@ module.exports = function(Measure) {
                 measures.push(measure);
 
                 // not persist any data
-                cb(null, null);
+                cb(null, measure);
             }
             else {
                 // calculate measure average
@@ -108,10 +108,10 @@ module.exports = function(Measure) {
                 if (err) throw err;
         
                 // get configuration result
-                var configuration = result.__data;
+                var configuration = result;
 
                 // get historize frequency
-                frec = configuration-value;
+                frec = configuration.value;
 
                 findLastMeasure(measure, cb);
             });

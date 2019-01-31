@@ -8,7 +8,8 @@
   "scripts": {
     "lint": "eslint .",
     "start": "node .",
-    "posttest": "npm run lint && nsp check"
+    "posttest": "npm run lint && nsp check",
+    "sdk": "./node_modules/.bin/lb-sdk server/server.js ../iot-uniovi-ui/src/app/shared/sdk"
   },
   "dependencies": {
     "compression": "^1.0.3",

@@ -2,29 +2,29 @@
 
 var moment = require('moment');
 
-const DEF_KEY = 'FRECUENCY'; // Frecuency Key code
-var frec;  // current frecuency in minutes
+const DEF_KEY = 'FREQUENCY'; // Frequency Key code
+var frec;  // current frequency in minutes
 
 var historized; //last meaure historized
 var measures = []; // historize array measures
 
 module.exports = function(Measure) {
-    Measure.updateFrecuency = function(frecuency) {
-        if (frecuency < 0)
-            return cb(new Error('The frecuency must be positive'));
+    Measure.updateFrequency = function(frequency) {
+        if (frequency < 0)
+            return cb(new Error('The frequency must be positive'));
 
-        frec = frecuency;        
+        frec = frequency;        
     }
 
-    Measure.getKeyFrecuency = function() {
+    Measure.getKeyFrequency = function() {
         return DEF_KEY;
     }
 
-    Measure.setFrecuency = function(frecuency, cb) {
-        if (frecuency < 0)
-            return cb(new Error('The frecuency must be positive'));
+    Measure.setFrequency = function(frequency, cb) {
+        if (frequency < 0)
+            return cb(new Error('The frequency must be positive'));
 
-        frec = frecuency;
+        frec = frequency;
 
         return cb(null, frec);
     }
@@ -99,14 +99,19 @@ module.exports = function(Measure) {
         }
     }
 
-    Measure.historize= function(measure, cb) {        
+    Measure.historize= function(measure, cb) {   
+        // get historizer frequency     
         if (frec == undefined) {
             var configuration = Measure.app.models.Configuration;
 
             configuration.getByKey(DEF_KEY , function (err, result) {
                 if (err) throw err;
         
-                frec = result;
+                // get configuration result
+                var configuration = result.__data;
+
+                // get historize frequency
+                frec = configuration-value;
 
                 findLastMeasure(measure, cb);
             });
@@ -116,12 +121,12 @@ module.exports = function(Measure) {
     }    
 
     Measure.remoteMethod (
-        'setFrecuency',
+        'setFrequency',
         {
-            description : "Set measure frecuency",
-            accepts: [{arg: 'frecuency', type: 'number',  description: 'Historize Frecuency', required: true, http: {source: 'path'}}],
+            description : "Set measure frequency",
+            accepts: [{arg: 'frequency', type: 'number',  description: 'Historize frequency', required: true, http: {source: 'path'}}],
             returns: {type: 'object', root: true},
-            http: {verb: 'post', path: '/measures/:frecuency/frecuency'}
+            http: {verb: 'post', path: '/:frequency/setFrequency'}
         }
     );
     
@@ -131,7 +136,7 @@ module.exports = function(Measure) {
             description : "Historize Measure",
             accepts: [{arg: 'measure', type: 'object',  description: 'Measure', required: true, http: {source: 'body'}}],
             returns: {type: 'object', root: true},
-            http: {verb: 'post', path: '/measures/historize'}
+            http: {verb: 'post', path: '/historize'}
         }
     );
 };

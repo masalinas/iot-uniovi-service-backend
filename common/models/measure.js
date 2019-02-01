@@ -5,18 +5,13 @@ var moment = require('moment');
 const DEF_KEY = 'FREQUENCY'; // Frequency Key code
 var frec;  // current frequency in minutes
 
+var historizes = [];
+
 var historized; //last meaure historized
 var measures = []; // historize array measures
 
 module.exports = function(Measure) {
-    Measure.updateFrequency = function(frequency) {
-        if (frequency < 0)
-            return cb(new Error('The frequency must be positive'));
-
-        frec = frequency;        
-    }
-
-    Measure.getKeyFrequency = function() {
+    Measure.getFrequencyByKey = function() {
         return DEF_KEY;
     }
 

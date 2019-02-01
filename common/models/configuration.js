@@ -29,12 +29,18 @@ module.exports = function(Configuration) {
       Configuration.upsert(configuration, function (err, result) {
         if (err) return cb(err);
 
+        configuration = result.__data;
+
         // propagate historize frequency to Measure service
         var measure = Configuration.app.models.Measure;
-        if (key == measure.getKeyFrequency())
-          measure.updateFrequency(value);
+        if (key == measure.getFrequencyByKey()) {
+          measure.setFrequency(value,  function (err, result) {
+            if (err) return cb(err);
 
-        cb(null, result.__data);
+            cb(null, configuration);    
+          });
+        } else
+          cb(null, configuration);
       });
     });
   };

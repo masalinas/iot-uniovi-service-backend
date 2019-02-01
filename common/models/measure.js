@@ -3,80 +3,66 @@
 var moment = require('moment');
 
 const DEF_KEY = 'FREQUENCY'; // Frequency Key code
-var frec;  // current frequency in minutes
+var frequency;  // current frequency in minutes
 
 var historizes = [];
 
-var historized; //last meaure historized
-var measures = []; // historize array measures
-
-module.exports = function(Measure) {
+module.exports = function(Measure) {    
     Measure.getFrequencyByKey = function() {
         return DEF_KEY;
     }
 
-    Measure.setFrequency = function(frequency, cb) {
+    Measure.setFrequency = function(value, cb) {
         if (frequency < 0)
             return cb(new Error('The frequency must be positive'));
 
-        frec = frequency;
+        frequency = value;
 
-        return cb(null, frec);
+        return cb(null, frequency);
     }
 
-    function findLastMeasure(measure, cb) {
-        if (historized == null || historized == undefined) {
-            Measure.findOne({where: {device: measure.device}, order: 'date DESC'}, function (err, result) {
-                if (err) return cb(err);
+    function saveMeasure(measure, cb) {        
+        // check if exist any historize for the measure
+        var historize = historizes.find(historize => historize.measure.device === measure.device);
 
-                // if not exist any data in the database
-                if (result == null)
-                    saveMeasure(measure, cb);
-                else {    
-                    historized = result.__data;
-
-                    saveMeasure(measure, cb);
-                }
-            });
-        } else
-            saveMeasure(measure, cb);
-    }
-
-    function saveMeasure(measure, cb) {
-        // check if exist any data in the database
-        if (historized == null || historized == undefined) {
-            // persist the measure
+        if (historize == undefined) { // persist the measure and historize                       
             Measure.upsert(measure, function (err, result) {
                 if (err) return cb(err);
 
-                historized = result.__data;
+                // measure persisted
+                var measure = result.__data;
 
-                cb(null, historized);
+                // create a new historize for the measure persisted
+                historizes.push({measure: measure, measures: []});
+
+                cb(null, measure);
             });
         }
-        else {            
-            var diff = moment(new Date()).diff(moment(historized.date), 'seconds');
+        else { 
+            // check the persistence frequency
+            var diff = moment(new Date()).diff(moment(historize.measure.date), 'seconds');
 
-            if (diff < frec * 60) {
-                // insert data in the historize array
-                measures.push(measure);
+            // frequency in minutes
+            if (diff < frequency * 60) {
+                // insert data in the historize measures collection
+                historize.measures.push(measure);
 
-                // not persist any data
                 cb(null, measure);
             }
             else {
-                // calculate measure average
                 var avg;
-                if (measures.length == 0)
+
+                // calculate measure average from historize collection
+                if (historize.measures.length == 0)
                     avg = measure.value;
                 else {                    
                     var sum = 0;
-                    for( var i = 0; i < measures.length; i++ ) {
-                        if ( measures[i].device == measure.device)
-                            sum += measures[i].value;
+                    for( var i = 0; i < historize.measures.length; i++ ) {
+                        if ( historize.measures[i].device == measure.device)
+                            sum += historize.measures[i].value;
                     }
 
-                    avg = sum/measures.length;
+                    avg = sum/historize.measures.length;
                 }
 
                 var avgMeasure = {date: new Date(), value: avg, device: measure.device};
@@ -85,18 +71,22 @@ module.exports = function(Measure) {
                 Measure.upsert(avgMeasure, function (err, result) {
                     if (err) return cb(err);
             
-                    // update last historized measure
-                    historized = result.__data;
+                    // measure persisted
+                    var measure = result.__data;
 
-                    cb(null, historized);
+                    // update historized from last measure persisted and clear measures collection
+                    historize.measure = measure;
+                    historize.measures = [];
+
+                    cb(null, measure);
                 });
             }
         }
     }
 
     Measure.historize= function(measure, cb) {   
-        // get historizer frequency     
-        if (frec == undefined) {
+        // get historize frequency (only at service start up)    
+        if (frequency == undefined) {                
             var configuration = Measure.app.models.Configuration;
 
             configuration.getByKey(DEF_KEY , function (err, result) {
@@ -106,13 +96,13 @@ module.exports = function(Measure) {
                 var configuration = result;
 
                 // get historize frequency
-                frec = configuration.value;
+                frequency = configuration.value;
 
-                findLastMeasure(measure, cb);
+                saveMeasure(measure, cb);
             });
         }
         else
-            findLastMeasure(measure, cb);                               
+            saveMeasure(measure, cb);                               
     }    
 
     Measure.remoteMethod (

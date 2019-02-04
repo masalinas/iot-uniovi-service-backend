@@ -2,7 +2,6 @@
 
 var redis = require("redis");
 var moment = require('moment');
-var _ = require('lodash');
 var app = require('../../server/server');
 
 var clusterize = app.get('clusterize');
@@ -38,20 +37,6 @@ if (clusterize == true) {
 
     client.on('connect', function() {
         console.log('Redis client connected from PID: ' + process.pid);
-
-        /*client.get(DEF_KEY_HISTORIZE, function (err, result) {
-            if (err) {
-                console.log(err);
-                throw err;
-            }
-
-            console.log('Initilized redis historized key from PID: ' + process.pid);
-
-            if (result == null)
-                historizes = [];            
-            else
-                historizes = JSON.parse(result);
-        });*/
     });
 
     sub.on("subscribe", function (channel, count) {

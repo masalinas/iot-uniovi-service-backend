@@ -37,25 +37,27 @@ if (clusterize == true) {
     });
 
     client.on('connect', function() {
-        console.log('Redis client connected');
+        console.log('Redis client connected from PID: ' + process.pid);
 
-        client.get(DEF_KEY_HISTORIZE, function (err, result) {
+        /*client.get(DEF_KEY_HISTORIZE, function (err, result) {
             if (err) {
                 console.log(err);
                 throw err;
             }
 
+            console.log('Initilized redis historized key from PID: ' + process.pid);
+
             if (result == null)
                 historizes = [];            
             else
                 historizes = JSON.parse(result);
-        });
+        });*/
     });
 
     sub.on("subscribe", function (channel, count) {
-        console.log("subscribed to channel: " + channel + ", count: " + count);    
+        console.log("subscribed to channel: " + channel + ", count: " + count + ' from PID: ' + process.pid);    
     });
-
+    
     sub.on("message", function (channel, message) {
         if (channel == DEF_KEY_FREQUENCY)
             frequency = message;    
@@ -71,7 +73,7 @@ module.exports = function(Measure) {
 
     Measure.setFrequency = function(value, cb) {
         if (frequency < 0)
-            return cb(new Error('The frequency must be positive'));
+            return cb(new Error('The frequency must be positive ' + ' from PID: ' + process.pid));
 
         frequency = value;
         
@@ -96,8 +98,11 @@ module.exports = function(Measure) {
                 historizes.push({measure: measure, measures: []});
 
                 // set historize in redis server
-                if (clusterize == true)
+                if (clusterize == true) {
                     client.set(DEF_KEY_HISTORIZE, JSON.stringify(historizes));
+
+                    console.log('Set redis historized key from PID: ' + process.pid);
+                }
 
                 cb(null, measure);
             });
@@ -112,8 +117,11 @@ module.exports = function(Measure) {
                 historize.measures.push(measure);
 
                 // set historize in redis server
-                if (clusterize == true)
+                if (clusterize == true) {
                     client.set(DEF_KEY_HISTORIZE, JSON.stringify(historizes));
+
+                    console.log('Set redis historized key from PID: ' + process.pid);
+                }
 
                 cb(null, measure);
             }
@@ -147,13 +155,34 @@ module.exports = function(Measure) {
                     historize.measures = [];
 
                     // set historize in redis server
-                    if (clusterize == true)
+                    if (clusterize == true) {
                         client.set(DEF_KEY_HISTORIZE, JSON.stringify(historizes));
+
+                        console.log('Set redis historized key from PID: ' + process.pid);
+                    }
 
                     cb(null, measure);
                 });
             }
         }
+    }
+
+    function getHistorizes(measure, cb) {
+        client.get(DEF_KEY_HISTORIZE, function (err, result) {
+            if (err) {
+                console.log(err);
+                throw err;
+            }
+
+            console.log('Get redis historized key from PID: ' + process.pid);
+
+            if (result == null)
+                historizes = [];            
+            else
+                historizes = JSON.parse(result);
+
+            saveMeasure(measure, cb);
+        });
     }
 
     Measure.historize= function(measure, cb) {   
@@ -170,11 +199,11 @@ module.exports = function(Measure) {
                 // get historize frequency
                 frequency = configuration.value;
 
-                saveMeasure(measure, cb);
+                getHistorizes(measure, cb);
             });
         }
         else
-            saveMeasure(measure, cb);                               
+            getHistorizes(measure, cb);                               
     }    
 
     Measure.remoteMethod (

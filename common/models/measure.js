@@ -1,15 +1,72 @@
 'use strict';
 
+var redis = require("redis");
 var moment = require('moment');
+var _ = require('lodash');
+var app = require('../../server/server');
 
-const DEF_KEY = 'FREQUENCY'; // Frequency Key code
-var frequency;  // current frequency in minutes
+var clusterize = app.get('clusterize');
+var sub = redis.createClient(), pub = redis.createClient(), client = redis.createClient();
 
+const DEF_KEY_FREQUENCY = 'FREQUENCY'; // Frequency topic
+const DEF_KEY_HISTORIZE = 'HISTORIZE'; // Historize topic
+
+var frequency;  // current persistence frequency in minutes
 var historizes = [];
+
+// define pub/sub channels for frequency topic in redis if API is clusterized
+if (clusterize == true) {
+    sub.on("error", function (err) {
+        console.log("Redis sub error " + err);
+    });
+
+    sub.on('connect', function() {
+        console.log('Redis sub connected');        
+    });
+
+    pub.on("error", function (err) {
+        console.log("Redis pub error " + err);
+    });
+
+    pub.on('connect', function() {
+        console.log('Redis pub connected');
+    });
+
+    client.on("error", function (err) {
+        console.log("Redis client error " + err);
+    });
+
+    client.on('connect', function() {
+        console.log('Redis client connected');
+
+        client.get(DEF_KEY_HISTORIZE, function (err, result) {
+            if (err) {
+                console.log(err);
+                throw err;
+            }
+
+            if (result == null)
+                historizes = [];            
+            else
+                historizes = JSON.parse(result);
+        });
+    });
+
+    sub.on("subscribe", function (channel, count) {
+        console.log("subscribed to channel: " + channel + ", count: " + count);    
+    });
+
+    sub.on("message", function (channel, message) {
+        if (channel == DEF_KEY_FREQUENCY)
+            frequency = message;    
+    });
+
+    sub.subscribe(DEF_KEY_FREQUENCY);
+}
 
 module.exports = function(Measure) {    
     Measure.getFrequencyByKey = function() {
-        return DEF_KEY;
+        return DEF_KEY_FREQUENCY;
     }
 
     Measure.setFrequency = function(value, cb) {
@@ -17,12 +74,15 @@ module.exports = function(Measure) {
             return cb(new Error('The frequency must be positive'));
 
         frequency = value;
+        
+        // republish frequency value to all api instances if API is clusterized
+        if (clusterize == true)
+            pub.publish(DEF_KEY_FREQUENCY, frequency);
 
         return cb(null, frequency);
     }
-
+    
     function saveMeasure(measure, cb) {        
-        // check if exist any historize for the measure
         var historize = historizes.find(historize => historize.measure.device === measure.device);
 
         if (historize == undefined) { // persist the measure and historize                       
@@ -35,6 +95,10 @@ module.exports = function(Measure) {
                 // create a new historize for the measure persisted
                 historizes.push({measure: measure, measures: []});
 
+                // set historize in redis server
+                if (clusterize == true)
+                    client.set(DEF_KEY_HISTORIZE, JSON.stringify(historizes));
+
                 cb(null, measure);
             });
         }
@@ -46,6 +110,10 @@ module.exports = function(Measure) {
             if (diff < frequency * 60) {
                 // insert data in the historize measures collection
                 historize.measures.push(measure);
+
+                // set historize in redis server
+                if (clusterize == true)
+                    client.set(DEF_KEY_HISTORIZE, JSON.stringify(historizes));
 
                 cb(null, measure);
             }
@@ -78,6 +146,10 @@ module.exports = function(Measure) {
                     historize.measure = measure;
                     historize.measures = [];
 
+                    // set historize in redis server
+                    if (clusterize == true)
+                        client.set(DEF_KEY_HISTORIZE, JSON.stringify(historizes));
+
                     cb(null, measure);
                 });
             }
@@ -89,7 +161,7 @@ module.exports = function(Measure) {
         if (frequency == undefined) {                
             var configuration = Measure.app.models.Configuration;
 
-            configuration.getByKey(DEF_KEY , function (err, result) {
+            configuration.getByKey(DEF_KEY_FREQUENCY , function (err, result) {
                 if (err) throw err;
         
                 // get configuration result

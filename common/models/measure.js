@@ -5,7 +5,6 @@ var moment = require('moment');
 var app = require('../../server/server');
 
 var clusterize = app.get('clusterize');
-var sub = redis.createClient(), pub = redis.createClient(), client = redis.createClient();
 
 const DEF_KEY_FREQUENCY = 'FREQUENCY'; // Frequency topic
 const DEF_KEY_HISTORIZE = 'HISTORIZE'; // Historize topic
@@ -14,7 +13,15 @@ var frequency;  // current persistence frequency in minutes
 var historizes = [];
 
 // define pub/sub channels for frequency topic in redis if API is clusterized
+var sub, pub, client;
+
+console.log("Clusterize is " + clusterize);
+
 if (clusterize == true) {
+    sub = redis.createClient(), pub = redis.createClient(), client = redis.createClient();
+
+    console.log("sub, pub and client created!");
+
     sub.on("error", function (err) {
         console.log("Redis sub error " + err);
     });
@@ -153,26 +160,30 @@ module.exports = function(Measure) {
     }
 
     function getHistorizes(measure, cb) {
-        client.get(DEF_KEY_HISTORIZE, function (err, result) {
-            if (err) {
-                console.log(err);
-                throw err;
-            }
+        if (clusterize == true) {
+            client.get(DEF_KEY_HISTORIZE, function (err, result) {
+                if (err) {
+                    console.log(err);
+                    throw err;
+                }
 
-            console.log('Get redis historized key from PID: ' + process.pid);
+                console.log('Get redis historized key from PID: ' + process.pid);
 
-            if (result == null)
-                historizes = [];            
-            else
-                historizes = JSON.parse(result);
+                if (result == undefined || result == null)
+                    historizes = [];            
+                else
+                    historizes = JSON.parse(result);
 
+                saveMeasure(measure, cb);
+            });
+        }
+        else 
             saveMeasure(measure, cb);
-        });
     }
 
     Measure.historize= function(measure, cb) {   
         // get historize frequency (only at service start up)    
-        if (frequency == undefined) {                
+        if (frequency == undefined) {    
             var configuration = Measure.app.models.Configuration;
 
             configuration.getByKey(DEF_KEY_FREQUENCY , function (err, result) {

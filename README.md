@@ -25,8 +25,9 @@
 # install pm2 cluster service
 `npm install -g pm2`
 
-# to start server cluster with pm2
-`pm2 start`
-`pm2 restart`
-`pm2 stop`
+# to start server cluster with pm2 with 2 instances
+`pm2 start server/server.js -i 2`
+`pm2 restart server`
+`pm2 stop server`
 `pm2 monit`
+`pm2 delete server`

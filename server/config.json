@@ -19,5 +19,5 @@
     },
     "cors": false
   },
-  "clusterize": true
+  "clusterize": false
 }

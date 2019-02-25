@@ -9,6 +9,7 @@ ENV MONGODB_PORT=27017
 ENV MONGODB_USER="uniovi"
 ENV MONGODB_PASSWORD="univo"
 ENV MONGODB_DB="uniovidb"
+ENV PRODUCTION=true
 
 RUN mkdir -p /usr/src/api && chown -R node:node /usr/src/api
 USER node

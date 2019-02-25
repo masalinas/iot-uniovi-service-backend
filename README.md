@@ -31,3 +31,14 @@
 `pm2 stop server`
 `pm2 monit`
 `pm2 delete server`
+
+# docker
+
+Dentro de la carpeta docker encontraremos dos ficheros:
+
+* make-image.sh
+* run.sh
+
+# docker-compose
+
+Partimos de que 

@@ -1,0 +1,13 @@
+
+{
+  "uniovidb": {
+    "host": "MONGODB_URL}",
+    "port": "MONGODB_PORT}",
+    "database": "uniovidb",
+    "url": "mongodb://uniovi:thingtrack@localhost:27017/uniovidb",
+    "password": "${MONGODB_PASSWORD}",
+    "name": "uniovidb",
+    "user": "${MONGODB_USER}",
+    "connector": "mongodb"
+  }
+}

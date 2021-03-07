@@ -26,11 +26,11 @@
 `npm install -g pm2`
 
 # to start server cluster with pm2 with 2 instances
-`pm2 start server/server.js -i 2`
-`pm2 restart server`
-`pm2 stop server`
-`pm2 monit`
-`pm2 delete server`
+`pm2 start server/server.js -i 2
+ pm2 restart server
+ pm2 stop server
+ pm2 monit
+ pm2 delete server`
 
 # docker
 

@@ -20,7 +20,7 @@
 `./node_modules/.bin/lb-sdk server/server.js ../iot-uniovi-ui/src/app/shared/sdk`
 
 # to start server
-`npm start* `
+`npm start`
 
 # install pm2 cluster service
 `npm install -g pm2`

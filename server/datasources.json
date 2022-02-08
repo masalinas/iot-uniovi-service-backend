@@ -1,8 +1,7 @@
-
 {
   "uniovidb": {
-    "connector": "mongodb",
     "name": "uniovidb",
+    "connector": "mongodb",
     "host": "localhost",
     "port": 27017,
     "database": "iotdb",

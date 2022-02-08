@@ -1,0 +1,11 @@
+{
+  "uniovidb": {
+    "name": "uniovidb",
+    "connector": "mongodb",
+    "host": "${MONGODB_URL}",
+    "port": "${MONGODB_PORT}",
+    "database": "${MONGODB_DB}",
+    "user": "${MONGODB_USER}",
+    "password": "${MONGODB_PASSWORD}"
+  }
+}

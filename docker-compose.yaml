@@ -1,0 +1,21 @@
+version: "3.7"
+
+services:
+  backend:
+    build: .
+    container_name: backend-iot
+    ports:
+      - 3000:3000
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URL=mongo-iot
+      - MONGODB_PORT=27017
+      - MONGODB_DB=iotdb
+      - MONGODB_USER=admin
+      - MONGODB_PASSWORD=uniovi
+    networks:
+      - network-name
+
+networks:
+    network-name:
+      name: uniovi
